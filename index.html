@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DC Motor Dijital İkiz - Rulman Dinamiği ve FFT</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; background-color: #121212; color: white; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui-panel {
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95); padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.9); border: 1px solid #444;
+            width: 95%; max-width: 1200px; display: flex; gap: 20px;
+        }
+        .left-panel { flex: 2; display: flex; flex-direction: column; gap: 10px; }
+        .right-panel { 
+            flex: 1.2; background: #050505; border: 1px solid #333; border-radius: 8px; 
+            position: relative; overflow: hidden; min-height: 230px; 
+        }
+        
+        .dashboard { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .data-box { text-align: center; flex: 1; }
+        .data-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .data-value { font-size: 24px; font-weight: bold; color: #00ffcc; margin-top: 2px; }
+        .data-value.danger { color: #ff4444; }
+        .data-value.warning { color: #ffaa00; }
+        
+        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px; }
+        .control-item { display: flex; flex-direction: column; }
+        label { font-size: 11px; color: #ccc; margin-bottom: 5px; display: flex; justify-content: space-between; font-weight: 600;}
+        input[type=range] { width: 100%; accent-color: #00ffcc; cursor: pointer;}
+        
+        .button-group { display: flex; gap: 10px; margin-top: 10px; }
+        button {
+            flex: 1; padding: 10px; font-size: 12px; font-weight: bold; border: none; border-radius: 6px; 
+            cursor: pointer; text-transform: uppercase; transition: 0.2s; letter-spacing: 0.5px;
+        }
+        .btn-reset { background: #ff4444; color: white; }
+        .btn-reset:hover { background: #cc0000; }
+        .btn-ss { background: #00ffcc; color: #000; }
+        .btn-ss:hover { background: #00ccaa; }
+        .btn-fft { background: #9900ff; color: #fff; }
+        .btn-fft:hover { background: #7700cc; }
+        
+        canvas#mainGraph { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .graph-title { position: absolute; top: 5px; left: 10px; font-size: 11px; color: #ddd; z-index: 10; font-weight: bold; text-shadow: 1px 1px 2px black;}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div id="ui-panel">
+    <div class="left-panel">
+        <div class="dashboard">
+            <div class="data-box">
+                <div class="data-label">Anlık Devir (RPM)</div>
+                <div class="data-value" id="val-rpm">0</div>
+            </div>
+            <div class="data-box">
+                <div class="data-label">Rulman Tork Kaybı (Nm)</div>
+                <div class="data-value warning" id="val-loss">0.000</div>
+            </div>
+            <div class="data-box">
+                <div class="data-label">Titreşim Şiddeti (N)</div>
+                <div class="data-value" id="val-vib">0.00</div>
+            </div>
+        </div>
+
+        <div class="controls-grid">
+            <div class="control-item">
+                <label>Giriş Voltajı: <span id="lbl-volt">0.0 V</span></label>
+                <input type="range" id="in-volt" min="0" max="24" step="0.5" value="0">
+            </div>
+            <div class="control-item">
+                <label>Dengesizlik Kütlesi: <span id="lbl-mass">20 g</span></label>
+                <input type="range" id="in-mass" min="0" max="100" step="1" value="20">
+            </div>
+            <div class="control-item">
+                <label>Rulman Kalitesi (μ): <span id="lbl-mu">0.005</span></label>
+                <input type="range" id="in-mu" min="0.001" max="0.050" step="0.001" value="0.005">
+            </div>
+            <div class="control-item">
+                <label>Armatür Direnci: <span id="lbl-res">1.5 Ω</span></label>
+                <input type="range" id="in-res" min="0.5" max="5.0" step="0.1" value="1.5">
+            </div>
+            <div class="control-item">
+                <label>Zaman Çarpanı: <span id="lbl-time">1x</span></label>
+                <input type="range" id="in-time" min="1" max="10" step="1" value="1">
+            </div>
+            <div class="control-item">
+                <label style="color: #ffaa00;">Görsel Abartı Çarpanı: <span id="lbl-scale">20x</span></label>
+                <input type="range" id="in-scale" min="1" max="100" step="1" value="20">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-reset" onclick="resetSystem()">Sıfırla</button>
+            <button class="btn-ss" onclick="jumpToSteadyState()">Steady-State'e Işınla</button>
+            <button class="btn-fft" id="btn-toggle-graph" onclick="toggleGraphMode()">FFT Analizine Geç</button>
+        </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="graph-title" id="graph-title-text">GEÇİCİ DURUM (STEP RESPONSE) GRAFİĞİ</div>
+        <canvas id="mainGraph"></canvas>
+    </div>
+</div>
+
+<script>
+    // --- 1. THREE.JS SAHNE KURULUMU ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0a0a0a');
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(12, 8, 20);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 3.5, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 20, 10);
+    scene.add(dirLight);
+
+    // --- 2. FİZİKSEL EKRAN (MESH'LER) ---
+    const baseHeight = 3.5;
+    const grid = new THREE.GridHelper(50, 50, 0x0044ff, 0x111111);
+    grid.position.y = 0;
+    scene.add(grid);
+
+    const motorMount = new THREE.Mesh(new THREE.BoxGeometry(4, baseHeight, 4), new THREE.MeshPhongMaterial({color: 0x1a1a1a}));
+    motorMount.position.set(-6, baseHeight / 2, 0); scene.add(motorMount);
+
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x333333}));
+    motor.position.set(-6, baseHeight, 0); scene.add(motor);
+
+    const bearingHeight = baseHeight + 0.5;
+    const bearingGeo = new THREE.BoxGeometry(1.2, bearingHeight, 1.5);
+    const bearingMat = new THREE.MeshPhongMaterial({color: 0x557788, shininess: 80}); 
+    
+    const bearing1 = new THREE.Mesh(bearingGeo, bearingMat);
+    bearing1.position.set(1, bearingHeight / 2, 0); 
+    scene.add(bearing1);
+    
+    const bearing2 = new THREE.Mesh(bearingGeo, bearingMat);
+    bearing2.position.set(6, bearingHeight / 2, 0);
+    scene.add(bearing2);
+
+    const shaftGroup = new THREE.Group();
+    shaftGroup.position.set(0, baseHeight, 0); scene.add(shaftGroup);
+
+    const coupling = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x222}));
+    coupling.position.x = -2.25; shaftGroup.add(coupling);
+
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 12, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0xdddddd, shininess: 100}));
+    shaft.position.x = 3.5; shaftGroup.add(shaft);
+
+    const disk = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x555}));
+    disk.position.x = 9; shaftGroup.add(disk);
+
+    const unbalanceMass = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.6, 16).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0xff3333}));
+    unbalanceMass.position.set(9.25, 2.5, 0); shaftGroup.add(unbalanceMass);
+
+    // --- 3. FİZİK DEĞİŞKENLERİ ---
+    let omega = 0; let theta = 0;
+    const Ke = 0.04; const Kt = 0.04; const J = 0.02; const b = 0.001;
+    const e = 0.025; const stiffness = 4000;
+    const r_mil = 0.004;
+
+    const inVolt = document.getElementById('in-volt'), inMass = document.getElementById('in-mass');
+    const inTime = document.getElementById('in-time'), inRes = document.getElementById('in-res');
+    const inMu = document.getElementById('in-mu'), inScale = document.getElementById('in-scale');
+    
+    let isFFTMode = false;
+    const canvas = document.getElementById('mainGraph');
+    const ctx = canvas.getContext('2d');
+    
+    let stepData = [];
+    let simTime = 0;
+    let tMax = 10; 
+    let rpmMax = 1000; 
+    let timeSeriesData = new Array(150).fill(0);
+    let exactTargetRpm = 0;
+
+    function calculateExactSteadyState(V, Ra, mu, m_kg) {
+        if (V === 0) return 0;
+        let A = mu * m_kg * e * r_mil;
+        let B = b + (Kt * Ke) / Ra;
+        let C = -(V * Kt) / Ra;
+        let finalRadSec = 0;
+        if (A === 0) finalRadSec = -C / B;
+        else finalRadSec = (-B + Math.sqrt(B*B - 4*A*C)) / (2*A);
+        return finalRadSec * (30 / Math.PI);
+    }
+
+    // --- MUTLAK SIFIRDAN BAŞLATMA (Zero Initial Condition) ---
+    function triggerStepResponse() {
+        let V = parseFloat(inVolt.value);
+        let Ra = parseFloat(inRes.value);
+        let mu = parseFloat(inMu.value);
+        let m_kg = parseFloat(inMass.value) / 1000;
+        
+        // PARAMETRE DEĞİŞTİĞİ AN HER ŞEYİ KESİNLİKLE SIFIRLA
+        omega = 0; 
+        theta = 0;
+        simTime = 0; 
+        stepData = []; 
+        timeSeriesData.fill(0);
+        shaftGroup.position.set(0, baseHeight, 0); // Görseli de eksene oturt
+
+        exactTargetRpm = calculateExactSteadyState(V, Ra, mu, m_kg);
+        
+        // Eksen sınırlarını yeni hedefe göre ayarla
+        rpmMax = exactTargetRpm > 10 ? exactTargetRpm * 1.2 : 1000; 
+
+        let tau = J / (b + (Kt * Ke) / Ra); 
+        tMax = tau * 5; 
+        if (tMax < 5) tMax = 5; 
+    }
+
+    // Herhangi bir slider bırakıldığında mutlak sıfırlama tetiklenir
+    inVolt.addEventListener('change', triggerStepResponse);
+    inRes.addEventListener('change', triggerStepResponse);
+    inMu.addEventListener('change', triggerStepResponse);
+    inMass.addEventListener('change', triggerStepResponse);
+
+    // --- 4. ÖZEL FONKSİYONLAR ---
+    window.resetSystem = function() {
+        inVolt.value = 0; 
+        triggerStepResponse();
+    };
+
+    window.jumpToSteadyState = function() {
+        let V = parseFloat(inVolt.value);
+        let Ra = parseFloat(inRes.value);
+        let mu = parseFloat(inMu.value);
+        let m_kg = parseFloat(inMass.value) / 1000;
+        if (V === 0) return; 
+
+        triggerStepResponse(); 
+        stepData = [];
+        let tempOmega = 0; // O'dan başlatarak hızlı çizim yap
+        let tempTime = 0; let dtFast = tMax / 300; 
+        
+        for(let i=0; i<=300; i++) {
+            let Eb = Ke * tempOmega;
+            let Ia = (V - Eb) / Ra;
+            let Tm = Kt * Ia;
+            let tempFc = m_kg * e * (tempOmega * tempOmega);
+            let tempTrulman = mu * tempFc * r_mil;
+            let frictionDir = tempOmega > 0 ? 1 : 0;
+            
+            let alpha = (Tm - b * tempOmega - (tempTrulman * frictionDir)) / J;
+            tempOmega += alpha * dtFast;
+            if(tempOmega < 0) tempOmega = 0;
+            
+            stepData.push({ t: tempTime, rpm: tempOmega * (30 / Math.PI) });
+            tempTime += dtFast;
+        }
+
+        omega = exactTargetRpm * (Math.PI / 30);
+        simTime = tMax + 1; 
+    };
+
+    window.toggleGraphMode = function() {
+        isFFTMode = !isFFTMode;
+        document.getElementById('btn-toggle-graph').innerText = isFFTMode ? "Step Grafiğine Dön" : "FFT Analizine Geç";
+        document.getElementById('graph-title-text').innerText = isFFTMode ? "VİBRASYON & FFT ANALİZİ" : "GEÇİCİ DURUM (STEP RESPONSE) GRAFİĞİ";
+        timeSeriesData.fill(0);
+    };
+
+    // --- 5. GRAFİK ÇİZİM MOTORLARI ---
+    function drawStepResponseGraph(currentRpm) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const paddingLeft = 55, paddingBottom = 30, paddingTop = 20, paddingRight = 20;
+        const w = canvas.width - paddingLeft - paddingRight; const h = canvas.height - paddingBottom - paddingTop;
+
+        ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.fillStyle = "#888"; ctx.font = "10px Tahoma"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+
+        for(let i = 0; i <= 5; i++) {
+            let yVal = (rpmMax / 5) * i; let yPos = (canvas.height - paddingBottom) - (yVal / rpmMax) * h;
+            ctx.beginPath(); ctx.moveTo(paddingLeft, yPos); ctx.lineTo(canvas.width - paddingRight, yPos); ctx.stroke(); 
+            if(i > 0) ctx.fillText(yVal.toFixed(0), paddingLeft - 5, yPos); 
+        }
+
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        for(let i = 0; i <= 5; i++) {
+            let tVal = (tMax / 5) * i; let xPos = paddingLeft + (tVal / tMax) * w;
+            ctx.beginPath(); ctx.moveTo(xPos, canvas.height - paddingBottom); ctx.lineTo(xPos, paddingTop); ctx.stroke(); 
+            ctx.fillText(tVal.toFixed(1) + "s", xPos, canvas.height - paddingBottom + 5); 
+        }
+
+        ctx.strokeStyle = "#777"; ctx.lineWidth = 2; ctx.beginPath(); 
+        ctx.moveTo(paddingLeft, canvas.height - paddingBottom); ctx.lineTo(canvas.width - paddingRight, canvas.height - paddingBottom); 
+        ctx.moveTo(paddingLeft, paddingTop); ctx.lineTo(paddingLeft, canvas.height - paddingBottom); ctx.stroke();
+
+        ctx.fillStyle = "#aaa"; ctx.font = "12px Tahoma";
+        ctx.fillText("Zaman (Saniye)", paddingLeft + w / 2, canvas.height - 15);
+        ctx.save(); ctx.translate(15, paddingTop + h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("Devir (RPM)", 0, 0); ctx.restore();
+
+        ctx.strokeStyle = "#00ffcc"; ctx.lineWidth = 3; ctx.beginPath();
+        for(let i = 0; i < stepData.length; i++) {
+            let pt = stepData[i];
+            let x = paddingLeft + (pt.t / tMax) * w; let y = (canvas.height - paddingBottom) - (pt.rpm / rpmMax) * h;
+            if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        if (exactTargetRpm > 1) {
+            ctx.fillStyle = "#00ffcc"; ctx.textAlign = "left";
+            ctx.fillText("Teorik Hedef: " + exactTargetRpm.toFixed(0) + " RPM", canvas.width - 150, paddingTop + 10);
+        }
+    }
+
+    function drawFFTGraph(currentRpm, currentFc, currentTheta) {
+        let noise = (Math.random() - 0.5) * (currentFc * 0.15);
+        let accelValue = currentFc * Math.sin(currentTheta) + noise;
+        timeSeriesData.push(accelValue); timeSeriesData.shift();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let w = canvas.width, h = canvas.height; let halfH = h / 2;
+
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, halfH/2 + 10); ctx.lineTo(w, halfH/2 + 10); ctx.stroke();
+        ctx.fillStyle = "#aaa"; ctx.font = "10px Tahoma"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText("Zaman Serisi (İvme)", 10, 25);
+
+        ctx.strokeStyle = "#ffaa00"; ctx.lineWidth = 1.5; ctx.beginPath();
+        let maxScale = 100;
+        for(let i=0; i<timeSeriesData.length; i++) {
+            let x = (i / timeSeriesData.length) * w; let y = (halfH/2 + 10) - (timeSeriesData[i] / maxScale) * (halfH - 20);
+            if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        let bottomY = h - 15;
+        ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, bottomY); ctx.lineTo(w, bottomY); ctx.stroke();
+        ctx.fillStyle = "#aaa"; ctx.fillText("FFT Spektrumu (Frekans - Hz)", 10, halfH + 20);
+
+        ctx.strokeStyle = "rgba(0, 255, 204, 0.3)"; ctx.lineWidth = 1; ctx.beginPath();
+        for(let i=0; i<w; i+=3) { ctx.moveTo(i, bottomY); ctx.lineTo(i, bottomY - Math.random() * 8); }
+        ctx.stroke();
+
+        let hz = currentRpm / 60;
+        if (currentRpm > 20) {
+            let maxHz = 100; let peakX = (hz / maxHz) * w; let peakHeight = (currentFc / maxScale) * (halfH - 30); 
+            if (peakX < w) {
+                ctx.strokeStyle = "#ff4444"; ctx.lineWidth = 3; ctx.beginPath();
+                ctx.moveTo(peakX, bottomY); ctx.lineTo(peakX, bottomY - Math.abs(peakHeight) - 10); ctx.stroke();
+                ctx.fillStyle = "#ff4444"; ctx.textAlign = "center";
+                ctx.fillText(hz.toFixed(1) + " Hz", peakX, bottomY - Math.abs(peakHeight) - 20);
+            }
+        }
+    }
+
+    // --- 6. ANA DÖNGÜ ---
+    const clock = new THREE.Clock();
+    triggerStepResponse(); 
+
+    function animate() {
+        requestAnimationFrame(animate);
+        let V = parseFloat(inVolt.value);
+        let m_kg = parseFloat(inMass.value) / 1000;
+        let timeScale = parseFloat(inTime.value);
+        let Ra = parseFloat(inRes.value);
+        let mu = parseFloat(inMu.value);
+        let visualScale = parseFloat(inScale.value); 
+
+        document.getElementById('lbl-volt').innerText = V.toFixed(1) + " V";
+        document.getElementById('lbl-mass').innerText = (m_kg*1000) + " g";
+        document.getElementById('lbl-time').innerText = timeScale + "x";
+        document.getElementById('lbl-res').innerText = Ra.toFixed(1) + " Ω";
+        document.getElementById('lbl-mu').innerText = mu.toFixed(3);
+        document.getElementById('lbl-scale').innerText = visualScale + "x";
+
+        let dt = clock.getDelta() * timeScale;
+        if (dt > 0.1 * timeScale) dt = 0.1 * timeScale; 
+
+        let Fc = m_kg * e * (omega * omega);
+        let Trulman = mu * Fc * r_mil; 
+        let frictionDir = omega > 0 ? 1 : (omega < 0 ? -1 : 0); 
+
+        let Eb = Ke * omega;
+        let Ia = (V - Eb) / Ra;
+        let Tm = Kt * Ia;
+        
+        let alpha = (Tm - b * omega - (Trulman * frictionDir)) / J;
+        omega += alpha * dt;
+        if (omega < 0) omega = 0;
+        let rpm = omega * (30 / Math.PI);
+
+        if (simTime <= tMax) {
+            simTime += dt;
+            stepData.push({ t: simTime, rpm: rpm });
+        }
+
+        let visualDeflection = (Fc / stiffness) * visualScale; 
+        theta += omega * dt;
+        
+        shaftGroup.rotation.x = theta;
+        let shakeY = Math.sin(theta) * visualDeflection;
+        let shakeZ = Math.cos(theta) * visualDeflection;
+        
+        shaftGroup.position.y = baseHeight + shakeY;
+        shaftGroup.position.z = shakeZ;
+
+        if (V === 0 && omega < 1) Ia = 0;
+        
+        document.getElementById('val-rpm').innerText = rpm.toFixed(0);
+        document.getElementById('val-loss').innerText = Trulman.toFixed(3);
+        document.getElementById('val-vib').innerText = Fc.toFixed(1);
+        
+        document.getElementById('val-loss').className = Trulman > 0.005 ? "data-value danger" : "data-value warning";
+        document.getElementById('val-vib').className = Fc > 30 ? "data-value danger" : "data-value";
+
+        if(canvas.width !== canvas.clientWidth) canvas.width = canvas.clientWidth;
+        if(canvas.height !== canvas.clientHeight) canvas.height = canvas.clientHeight;
+
+        if (isFFTMode) {
+            drawFFTGraph(rpm, Fc, theta);
+        } else {
+            drawStepResponseGraph(rpm);
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+</script>
+</body>
+</html>
