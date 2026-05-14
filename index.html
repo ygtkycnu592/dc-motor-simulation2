@@ -3,69 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotor Dengesizliği ve Uç Düğüm 3D Ön Tasarım Modeli</title>
+    <title>Rotor Dengesizliği 3D Ön Tasarım Modeli</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; background-color: #f0f2f5; color: #111; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; background-color: #eef1f5; color: #111; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
         
-        /* UI Panel */
+        /* UI Panel - Boyutu ve boşlukları küçültüldü */
         #ui-panel {
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-            background: rgba(20, 20, 20, 0.95); padding: 15px; border-radius: 12px;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.5); border: 1px solid #444;
-            width: 95%; max-width: 1200px; display: flex; gap: 20px; color: white;
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 24, 30, 0.95); padding: 12px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #3a4454;
+            width: 95%; max-width: 1000px; display: flex; gap: 15px; color: #eef;
             z-index: 10;
         }
-        .left-panel { flex: 2; display: flex; flex-direction: column; gap: 10px; }
+        .left-panel { flex: 1.8; display: flex; flex-direction: column; gap: 6px; }
         .right-panel { 
-            flex: 1.2; background: #050505; border: 1px solid #333; border-radius: 8px; 
-            position: relative; overflow: hidden; min-height: 230px; 
+            flex: 1.2; background: #0b0e14; border: 1px solid #2a3441; border-radius: 6px; 
+            position: relative; overflow: hidden; min-height: 180px; 
         }
         
-        .header-title { font-size: 16px; font-weight: bold; color: #00ffcc; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px;}
-        .sub-title { font-size: 11px; color: #aaa; margin-bottom: 5px; }
+        /* Akademik Tema Renkleri */
+        .header-title { font-size: 14px; font-weight: bold; color: #5dade2; margin-bottom: 2px; text-transform: uppercase; border-bottom: 1px solid #3a4454; padding-bottom: 4px;}
+        .sub-title { font-size: 10px; color: #8899a6; margin-bottom: 4px; }
         
         .info-box {
-            font-size: 11px; color: #ddd; background: rgba(255,255,255,0.05); 
-            padding: 8px; border-radius: 4px; border-left: 3px solid #00ffcc;
-            line-height: 1.4;
+            font-size: 10px; color: #cbd5e1; background: rgba(255,255,255,0.03); 
+            padding: 6px; border-radius: 4px; border-left: 3px solid #5dade2;
+            line-height: 1.3;
         }
 
-        .dashboard { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 5px;}
+        .dashboard { display: flex; justify-content: space-between; border-bottom: 1px solid #3a4454; padding-bottom: 6px; margin-top: 4px;}
         .data-box { text-align: center; flex: 1; }
-        .data-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .data-value { font-size: 22px; font-weight: bold; color: #00ffcc; margin-top: 2px; }
-        .data-value.danger { color: #ff4444; }
+        .data-label { font-size: 9px; color: #8899a6; text-transform: uppercase; letter-spacing: 0.5px; }
+        .data-value { font-size: 18px; font-weight: bold; color: #5dade2; margin-top: 2px; }
+        .data-value.danger { color: #e74c3c; }
         
-        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px; }
+        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
         .control-item { display: flex; flex-direction: column; }
-        label { font-size: 11px; color: #ccc; margin-bottom: 5px; display: flex; justify-content: space-between; font-weight: 600;}
-        input[type=range] { width: 100%; accent-color: #00ffcc; cursor: pointer;}
+        label { font-size: 10px; color: #cbd5e1; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: 600;}
+        input[type=range] { width: 100%; accent-color: #5dade2; cursor: pointer; height: 4px;}
         
-        .button-group { display: flex; gap: 10px; margin-top: 10px; }
+        .button-group { display: flex; gap: 8px; margin-top: 6px; }
         button {
-            flex: 1; padding: 10px; font-size: 12px; font-weight: bold; border: none; border-radius: 6px; 
+            flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; 
             cursor: pointer; text-transform: uppercase; transition: 0.2s; letter-spacing: 0.5px;
         }
-        .btn-toggle { background: #9900ff; color: #fff; }
-        .btn-toggle:hover { background: #7700cc; }
+        /* Koyu Mavi Buton */
+        .btn-toggle { background: #1a5276; color: #fff; border: 1px solid #154360; }
+        .btn-toggle:hover { background: #154360; }
         
         canvas#mainGraph { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .graph-title { position: absolute; top: 5px; left: 10px; font-size: 11px; color: #ddd; z-index: 10; font-weight: bold; text-shadow: 1px 1px 2px black;}
-        .graph-note { position: absolute; bottom: 5px; right: 10px; font-size: 9px; color: #777; z-index: 10; font-style: italic;}
+        .graph-title { position: absolute; top: 5px; left: 8px; font-size: 10px; color: #ddd; z-index: 10; font-weight: bold;}
+        .graph-note { position: absolute; bottom: 5px; right: 8px; font-size: 9px; color: #666; z-index: 10; font-style: italic;}
 
         /* 3D Sahne Etiketleri */
         .scene-label {
-            position: absolute; background: rgba(0, 0, 0, 0.75); color: #fff;
-            padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;
-            pointer-events: none; white-space: nowrap; border: 1px solid #555;
+            position: absolute; background: rgba(15, 20, 25, 0.85); color: #fff;
+            padding: 3px 6px; border-radius: 3px; font-size: 9px; font-weight: bold;
+            pointer-events: none; white-space: nowrap; border: 1px solid #333;
             transform: translate(-50%, -50%); z-index: 5;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
-        .lbl-mpu { border-top: 2px solid #00ffcc; }
-        .lbl-stm { border-top: 2px solid #228833; }
-        .lbl-wire1 { background: rgba(0, 150, 200, 0.8); font-size: 9px; border: none;}
-        .lbl-wire2 { background: rgba(200, 100, 0, 0.8); font-size: 9px; border: none;}
+        .lbl-mpu { border-top: 2px solid #5dade2; }
+        .lbl-stm { border-top: 2px solid #2ecc71; }
+        .lbl-wire1 { background: rgba(41, 128, 185, 0.8); border: none; font-size: 8px;}
+        .lbl-wire2 { background: rgba(127, 140, 141, 0.8); border: none; font-size: 8px;}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -74,47 +76,46 @@
 
 <div id="canvas-container"></div>
 
-<div id="lbl-mpu-3d" class="scene-label lbl-mpu">MPU-6050 MEMS İvmeölçer</div>
-<div id="lbl-stm-3d" class="scene-label lbl-stm">STM32 Uç Düğüm</div>
-<div id="lbl-i2c-3d" class="scene-label lbl-wire1">I2C / Sensör Verisi</div>
-<div id="lbl-out-3d" class="scene-label lbl-wire2">İşlenmiş Veri / Sonuç</div>
+<div id="lbl-mpu-3d" class="scene-label lbl-mpu">MPU-6050 Sensör Modülü</div>
+<div id="lbl-stm-3d" class="scene-label lbl-stm">STM32 Kontrol Ünitesi</div>
+<div id="lbl-i2c-3d" class="scene-label lbl-wire1">I2C Veri Hattı</div>
+<div id="lbl-out-3d" class="scene-label lbl-wire2">İşlenmiş Veri (PC)</div>
 
 <div id="ui-panel">
     <div class="left-panel">
-        <div class="header-title">Düşük Maliyetli Titreşim Analizi Görselleştirmesi</div>
-        <div class="sub-title">Motor-Rotor Düzeneği 3D Ön Tasarım Modeli (F_c = m_u · e · ω²)</div>
+        <div class="header-title">Rotor Dengesizliği 3D Ön Tasarım Modeli</div>
+        <div class="sub-title">1000 RPM Motor-Rotor Düzeneği Titreşim Analizi (F<sub>c</sub> = m<sub>u</sub> · e · ω²)</div>
         
         <div class="info-box">
-            <b>MPU-6050:</b> Titreşim verisinin ölçülmesi.<br>
-            <b>STM32:</b> Uç noktada veri işleme ve FFT/özellik çıkarımı.
+            <b>MPU-6050:</b> Uç noktada titreşim ivmesinin ölçümü. &nbsp; | &nbsp; <b>STM32:</b> Veri işleme ve spektral analiz (FFT) donanımı.
         </div>
 
         <div class="dashboard">
             <div class="data-box">
                 <div class="data-label">Motor Hızı</div>
-                <div class="data-value"><span id="val-rpm">1000</span> <span style="font-size:12px;">RPM</span></div>
+                <div class="data-value"><span id="val-rpm">1000</span> <span style="font-size:10px;">RPM</span></div>
             </div>
             <div class="data-box">
-                <div class="data-label">1X Dönme Frekansı</div>
-                <div class="data-value"><span id="val-hz">16.67</span> <span style="font-size:12px;">Hz</span></div>
+                <div class="data-label">1X Dönüş Frekansı</div>
+                <div class="data-value"><span id="val-hz">16.67</span> <span style="font-size:10px;">Hz</span></div>
             </div>
             <div class="data-box">
                 <div class="data-label">Açısal Hız (ω)</div>
-                <div class="data-value"><span id="val-rads">104.7</span> <span style="font-size:12px;">rad/s</span></div>
+                <div class="data-value"><span id="val-rads">104.7</span> <span style="font-size:10px;">rad/s</span></div>
             </div>
             <div class="data-box">
-                <div class="data-label">Dengesizlik Kuvveti (Fc)</div>
-                <div class="data-value" id="val-fc">0.00 <span style="font-size:12px;">N</span></div>
+                <div class="data-label">Dengesizlik Kuvveti (F<sub>c</sub>)</div>
+                <div class="data-value" id="val-fc">0.00 <span style="font-size:10px;">N</span></div>
             </div>
         </div>
 
         <div class="controls-grid">
             <div class="control-item">
-                <label>Motor Hızı (N): <span id="lbl-rpm">1000 RPM</span></label>
+                <label>Motor Hızı: <span id="lbl-rpm">1000 RPM</span></label>
                 <input type="range" id="in-rpm" min="0" max="3000" step="10" value="1000">
             </div>
             <div class="control-item">
-                <label>Dengesizlik Kütlesi (m_u): <span id="lbl-mass">20 g</span></label>
+                <label>Dengesizlik Kütlesi (m<sub>u</sub>): <span id="lbl-mass">20 g</span></label>
                 <input type="range" id="in-mass" min="0" max="100" step="1" value="20">
             </div>
             <div class="control-item">
@@ -122,7 +123,7 @@
                 <input type="range" id="in-rad" min="0" max="10" step="0.1" value="2.5">
             </div>
             <div class="control-item">
-                <label style="color: #ffaa00;">Görsel Titreşim Çarpanı: <span id="lbl-scale">20x</span></label>
+                <label style="color: #5dade2;">Görsel Titreşim Çarpanı: <span id="lbl-scale">20x</span></label>
                 <input type="range" id="in-scale" min="1" max="100" step="1" value="20">
             </div>
             <div class="control-item">
@@ -145,79 +146,107 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#f0f2f5'); 
+    scene.background = new THREE.Color('#eef1f5'); 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(12, 10, 22);
+    camera.position.set(10, 8, 18);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 3.5, 0);
+    controls.target.set(0, 3, 0);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(10, 20, 10);
+    dirLight.position.set(5, 15, 10);
     scene.add(dirLight);
 
-    const grid = new THREE.GridHelper(50, 50, 0x88aaff, 0xdcdcdc);
+    const grid = new THREE.GridHelper(50, 50, 0xaabbcc, 0xddeeff);
     scene.add(grid);
 
     const baseHeight = 3.5;
 
-    const motorMount = new THREE.Mesh(new THREE.BoxGeometry(4, baseHeight, 4), new THREE.MeshPhongMaterial({color: 0x444444}));
+    // Motor ve Yataklar
+    const motorMount = new THREE.Mesh(new THREE.BoxGeometry(4, baseHeight, 4), new THREE.MeshPhongMaterial({color: 0x4a5568}));
     motorMount.position.set(-6, baseHeight / 2, 0); scene.add(motorMount);
-    const motor = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x333333}));
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x2d3748}));
     motor.position.set(-6, baseHeight, 0); scene.add(motor);
 
     const bearingHeight = baseHeight + 0.5;
     const bearingGeo = new THREE.BoxGeometry(1.2, bearingHeight, 1.5);
-    const bearingMat = new THREE.MeshPhongMaterial({color: 0x335566, shininess: 80}); 
+    const bearingMat = new THREE.MeshPhongMaterial({color: 0x2b6cb0, shininess: 80}); 
     const bearing1 = new THREE.Mesh(bearingGeo, bearingMat); bearing1.position.set(1, bearingHeight / 2, 0); scene.add(bearing1);
     const bearing2 = new THREE.Mesh(bearingGeo, bearingMat); bearing2.position.set(6, bearingHeight / 2, 0); scene.add(bearing2);
 
+    // Rotor Grubu
     const shaftGroup = new THREE.Group();
     shaftGroup.position.set(0, baseHeight, 0); scene.add(shaftGroup);
 
-    const coupling = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x222222}));
+    const coupling = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x1a202c}));
     coupling.position.x = -2.25; shaftGroup.add(coupling);
 
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 12, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x999999, shininess: 100}));
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 12, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0xa0aec0, shininess: 100}));
     shaft.position.x = 3.5; shaftGroup.add(shaft);
 
-    const disk = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x555555}));
+    const disk = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.5, 32).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0x718096}));
     disk.position.x = 9; shaftGroup.add(disk);
 
-    const unbalanceMass = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.6, 16).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0xff3333}));
+    const unbalanceMass = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.6, 16).rotateZ(Math.PI/2), new THREE.MeshPhongMaterial({color: 0xe53e3e}));
     shaftGroup.add(unbalanceMass);
 
-    // MPU-6050
+    // MPU-6050 (Yatak üzerinde vidalı PCB tasarımı)
     const mpuGroup = new THREE.Group();
-    const mpuPcb = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.4), new THREE.MeshPhongMaterial({color: 0x0088aa}));
-    const mpuChip = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.25), new THREE.MeshPhongMaterial({color: 0x111111}));
-    mpuChip.position.y = 0.08;
+    const mpuPcb = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.6), new THREE.MeshPhongMaterial({color: 0x2980b9})); // PCB
+    const mpuChip = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.25), new THREE.MeshPhongMaterial({color: 0x111111})); // Çip
+    mpuChip.position.y = 0.04;
     mpuGroup.add(mpuPcb); mpuGroup.add(mpuChip);
-    mpuGroup.position.set(1, bearingHeight + 0.05, 0); 
+    
+    // Sensör vidaları (4 köşe)
+    const screwGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8);
+    const screwMat = new THREE.MeshPhongMaterial({color: 0xcccccc});
+    const positions = [[0.3, -0.2], [0.3, 0.2], [-0.3, -0.2], [-0.3, 0.2]];
+    positions.forEach(pos => {
+        let screw = new THREE.Mesh(screwGeo, screwMat);
+        screw.position.set(pos[0], 0.02, pos[1]);
+        mpuGroup.add(screw);
+    });
+
+    mpuGroup.position.set(1, bearingHeight + 0.025, 0); // Yatağa sıfıra yakın oturtuldu
     scene.add(mpuGroup);
 
-    // STM32
-    const stmGroup = new THREE.Group();
-    const stmPcb = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 3), new THREE.MeshPhongMaterial({color: 0x228833}));
-    const stmMainChip = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.8), new THREE.MeshPhongMaterial({color: 0x111111}));
-    stmMainChip.position.set(0, 0.1, -0.5);
-    const stmPins = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 2.5), new THREE.MeshPhongMaterial({color: 0xaaaaaa}));
-    stmPins.position.set(-0.8, 0.15, 0);
-    stmGroup.add(stmPcb); stmGroup.add(stmMainChip); stmGroup.add(stmPins);
-    stmGroup.position.set(3, 0.05, 5); 
-    scene.add(stmGroup);
+    // STM32 Kontrol Platformu (Yerdeki gri kutu ve kart)
+    const platformGroup = new THREE.Group();
+    const controlBox = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 4), new THREE.MeshPhongMaterial({color: 0xaabbcc})); // Elektronik Kutu
+    controlBox.position.y = 0.75;
+    const stmPcb = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 3), new THREE.MeshPhongMaterial({color: 0x27ae60}));
+    stmPcb.position.y = 1.525;
+    const stmMainChip = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), new THREE.MeshPhongMaterial({color: 0x111111}));
+    stmMainChip.position.set(0, 1.58, -0.5);
+    const stmPins = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 2.5), new THREE.MeshPhongMaterial({color: 0xaaaaaa}));
+    stmPins.position.set(-0.8, 1.6, 0);
+    
+    platformGroup.add(controlBox); platformGroup.add(stmPcb); platformGroup.add(stmMainChip); platformGroup.add(stmPins);
+    platformGroup.position.set(3, 0, 5); // Zeminde
+    scene.add(platformGroup);
 
-    // Kablolar
-    const curve1 = new THREE.QuadraticBezierCurve3(new THREE.Vector3(1, bearingHeight, 0), new THREE.Vector3(2, 1.5, 3), new THREE.Vector3(2.5, 0.1, 5));
-    const wire1 = new THREE.Mesh(new THREE.TubeGeometry(curve1, 20, 0.04, 8, false), new THREE.MeshBasicMaterial({color: 0x00ffcc}));
+    // Kablo 1: MPU-6050 -> STM32 (Gerçekçi, yere inen hat)
+    const curve1 = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(1, bearingHeight, 0.3), // MPU çıkışı
+        new THREE.Vector3(1, 0.1, 1.5),           // Yatağın dibinden yere iniş
+        new THREE.Vector3(2.5, 0.1, 4),           // Yerde kıvrılma
+        new THREE.Vector3(2.8, 1.55, 4.5)         // Kutuya/STM'ye çıkış
+    );
+    const wire1 = new THREE.Mesh(new THREE.TubeGeometry(curve1, 40, 0.025, 8, false), new THREE.MeshPhongMaterial({color: 0x2980b9}));
     scene.add(wire1);
 
-    const curve2 = new THREE.QuadraticBezierCurve3(new THREE.Vector3(3.5, 0.1, 5), new THREE.Vector3(6, 0.2, 5), new THREE.Vector3(12, 1.0, 3));
-    const wire2 = new THREE.Mesh(new THREE.TubeGeometry(curve2, 20, 0.06, 8, false), new THREE.MeshBasicMaterial({color: 0xffaa00}));
+    // Kablo 2: STM32 -> PC (Yere inip kenara giden hat)
+    const curve2 = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(3.2, 1.55, 5),          // STM çıkışı
+        new THREE.Vector3(4, 0.1, 6),             // Yere iniş
+        new THREE.Vector3(8, 0.1, 6),             // Yerde düz ilerleme
+        new THREE.Vector3(12, 0.1, 6)             // Ekrandan çıkış
+    );
+    const wire2 = new THREE.Mesh(new THREE.TubeGeometry(curve2, 40, 0.03, 8, false), new THREE.MeshPhongMaterial({color: 0x7f8c8d}));
     scene.add(wire2);
 
     let theta = 0;
@@ -232,7 +261,6 @@
     const ctx = canvas.getContext('2d');
     let timeSeriesData = new Array(150).fill(0);
 
-    // BURASI GÜNCELLENDİ (Sade Buton Metinleri)
     window.toggleGraphMode = function() {
         isFreqMode = !isFreqMode;
         document.getElementById('btn-toggle-graph').innerText = isFreqMode ? "Zaman Ortamına Dön" : "Frekans Spektrumuna Geç";
@@ -249,12 +277,12 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         let w = canvas.width, h = canvas.height, midY = h / 2;
 
-        ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.beginPath(); 
+        ctx.strokeStyle = "#2a3441"; ctx.lineWidth = 1; ctx.beginPath(); 
         ctx.moveTo(0, midY); ctx.lineTo(w, midY); ctx.stroke();
-        ctx.fillStyle = "#aaa"; ctx.font = "10px Tahoma"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; 
+        ctx.fillStyle = "#8899a6"; ctx.font = "9px Tahoma"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; 
         ctx.fillText("Genlik ~ İvme (a)", 10, 20);
 
-        ctx.strokeStyle = "#00ffcc"; ctx.lineWidth = 2; ctx.beginPath();
+        ctx.strokeStyle = "#5dade2"; ctx.lineWidth = 1.5; ctx.beginPath();
         let maxScale = Math.max(100, Fc * 1.5);
         for(let i=0; i<timeSeriesData.length; i++) {
             let x = (i / timeSeriesData.length) * w; 
@@ -268,12 +296,12 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         let w = canvas.width, h = canvas.height, bottomY = h - 25;
 
-        ctx.strokeStyle = "#444"; ctx.lineWidth = 1; ctx.beginPath(); 
+        ctx.strokeStyle = "#2a3441"; ctx.lineWidth = 1; ctx.beginPath(); 
         ctx.moveTo(0, bottomY); ctx.lineTo(w, bottomY); ctx.stroke();
-        ctx.fillStyle = "#aaa"; ctx.font = "10px Tahoma"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; 
+        ctx.fillStyle = "#8899a6"; ctx.font = "9px Tahoma"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; 
         ctx.fillText("Frekans (Hz)", 10, 20);
 
-        ctx.strokeStyle = "rgba(0, 255, 204, 0.2)"; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.strokeStyle = "rgba(93, 173, 226, 0.15)"; ctx.lineWidth = 1; ctx.beginPath();
         for(let i=0; i<w; i+=4) { ctx.moveTo(i, bottomY); ctx.lineTo(i, bottomY - Math.random() * 10); }
         ctx.stroke();
 
@@ -284,9 +312,9 @@
             let peakHeight = (Fc / maxScale) * (h - 60); 
 
             if (peakX < w && Fc > 0) {
-                ctx.strokeStyle = "#ff4444"; ctx.lineWidth = 3; ctx.beginPath();
+                ctx.strokeStyle = "#e74c3c"; ctx.lineWidth = 2; ctx.beginPath();
                 ctx.moveTo(peakX, bottomY); ctx.lineTo(peakX, bottomY - Math.abs(peakHeight) - 10); ctx.stroke();
-                ctx.fillStyle = "#ff4444"; ctx.textAlign = "center";
+                ctx.fillStyle = "#e74c3c"; ctx.textAlign = "center"; ctx.font = "10px Tahoma";
                 ctx.fillText("1X Frekansı", peakX, bottomY - Math.abs(peakHeight) - 25);
                 ctx.fillText(fr.toFixed(1) + " Hz", peakX, bottomY - Math.abs(peakHeight) - 13);
             }
@@ -294,11 +322,12 @@
     }
 
     function updateHTML_Labels() {
+        // Etiketlerin 3D konumları
         const points = [
-            { id: 'lbl-mpu-3d', vec: new THREE.Vector3(1, bearingHeight + 0.6, 0) },
-            { id: 'lbl-stm-3d', vec: new THREE.Vector3(3, 1.2, 5) },
-            { id: 'lbl-i2c-3d', vec: new THREE.Vector3(1.7, 0.8, 2.5) }, 
-            { id: 'lbl-out-3d', vec: new THREE.Vector3(8, 0.8, 4) }     
+            { id: 'lbl-mpu-3d', vec: new THREE.Vector3(1, bearingHeight + 0.4, 0) },
+            { id: 'lbl-stm-3d', vec: new THREE.Vector3(3, 2.2, 5) },
+            { id: 'lbl-i2c-3d', vec: new THREE.Vector3(2.5, 0.4, 4) }, // Yerdeki kablo ortası
+            { id: 'lbl-out-3d', vec: new THREE.Vector3(8, 0.4, 6) }    // Yerdeki diğer kablo ortası
         ];
 
         points.forEach(p => {
@@ -346,7 +375,7 @@
         document.getElementById('val-rads').innerText = omega.toFixed(1);
         
         let fcElement = document.getElementById('val-fc');
-        fcElement.innerHTML = Fc.toFixed(2) + ' <span style="font-size:12px;">N</span>';
+        fcElement.innerHTML = Fc.toFixed(2) + ' <span style="font-size:10px;">N</span>';
         fcElement.className = Fc > 50 ? "data-value danger" : "data-value";
 
         let dt = clock.getDelta() * timeScale;
