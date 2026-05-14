@@ -8,18 +8,19 @@
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Verdana, sans-serif; background-color: #eef1f5; color: #111; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
         
-        /* UI Panel - Boyutu ve boşlukları küçültüldü */
+        /* UI Panel - Sağ tarafa dikey (sidebar) şeklinde sabitlendi */
         #ui-panel {
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(20, 24, 30, 0.95); padding: 12px; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #3a4454;
-            width: 95%; max-width: 1000px; display: flex; gap: 15px; color: #eef;
+            position: absolute; top: 15px; right: 15px; left: auto; bottom: auto; transform: none;
+            background: rgba(20, 24, 30, 0.95); padding: 15px; border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #3a4454;
+            width: 320px; height: calc(100vh - 30px);
+            display: flex; flex-direction: column; gap: 15px; color: #eef;
             z-index: 10;
         }
-        .left-panel { flex: 1.8; display: flex; flex-direction: column; gap: 6px; }
+        .left-panel { flex: none; display: flex; flex-direction: column; gap: 8px; }
         .right-panel { 
-            flex: 1.2; background: #0b0e14; border: 1px solid #2a3441; border-radius: 6px; 
-            position: relative; overflow: hidden; min-height: 180px; 
+            flex: 1; background: #0b0e14; border: 1px solid #2a3441; border-radius: 6px; 
+            position: relative; overflow: hidden; min-height: 200px; display: flex; flex-direction: column;
         }
         
         /* Akademik Tema Renkleri */
@@ -32,23 +33,23 @@
             line-height: 1.3;
         }
 
-        .dashboard { display: flex; justify-content: space-between; border-bottom: 1px solid #3a4454; padding-bottom: 6px; margin-top: 4px;}
-        .data-box { text-align: center; flex: 1; }
+        /* Dikey Panel İçin Izgara (Grid) Düzenlemeleri */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-bottom: 1px solid #3a4454; padding-bottom: 8px; margin-top: 4px;}
+        .data-box { text-align: left; }
         .data-label { font-size: 9px; color: #8899a6; text-transform: uppercase; letter-spacing: 0.5px; }
         .data-value { font-size: 18px; font-weight: bold; color: #5dade2; margin-top: 2px; }
         .data-value.danger { color: #e74c3c; }
         
-        .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+        .controls-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
         .control-item { display: flex; flex-direction: column; }
         label { font-size: 10px; color: #cbd5e1; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: 600;}
         input[type=range] { width: 100%; accent-color: #5dade2; cursor: pointer; height: 4px;}
         
         .button-group { display: flex; gap: 8px; margin-top: 6px; }
         button {
-            flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; 
+            flex: 1; padding: 10px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; 
             cursor: pointer; text-transform: uppercase; transition: 0.2s; letter-spacing: 0.5px;
         }
-        /* Koyu Mavi Buton */
         .btn-toggle { background: #1a5276; color: #fff; border: 1px solid #154360; }
         .btn-toggle:hover { background: #154360; }
         
@@ -79,7 +80,7 @@
 <div id="lbl-mpu-3d" class="scene-label lbl-mpu">MPU-6050 Sensör Modülü</div>
 <div id="lbl-stm-3d" class="scene-label lbl-stm">STM32 Kontrol Ünitesi</div>
 <div id="lbl-i2c-3d" class="scene-label lbl-wire1">I2C Veri Hattı</div>
-<div id="lbl-out-3d" class="scene-label lbl-wire2">İşlenmiş Veri (PC)</div>
+<div id="lbl-out-3d" class="scene-label lbl-wire2">İşlenmiş Verinin Çıkış Portu</div>
 
 <div id="ui-panel">
     <div class="left-panel">
@@ -87,7 +88,7 @@
         <div class="sub-title">1000 RPM Motor-Rotor Düzeneği Titreşim Analizi (F<sub>c</sub> = m<sub>u</sub> · e · ω²)</div>
         
         <div class="info-box">
-            <b>MPU-6050:</b> Uç noktada titreşim ivmesinin ölçümü. &nbsp; | &nbsp; <b>STM32:</b> Veri işleme ve spektral analiz (FFT) donanımı.
+            <b>MPU-6050:</b> Uç noktada titreşim ivmesinin ölçümü. <br><br> <b>STM32:</b> Veri işleme ve spektral analiz (FFT) donanımı.
         </div>
 
         <div class="dashboard">
@@ -111,23 +112,23 @@
 
         <div class="controls-grid">
             <div class="control-item">
-                <label>Motor Hızı: <span id="lbl-rpm">1000 RPM</span></label>
+                <label><span>Motor Hızı:</span> <span id="lbl-rpm">1000 RPM</span></label>
                 <input type="range" id="in-rpm" min="0" max="3000" step="10" value="1000">
             </div>
             <div class="control-item">
-                <label>Dengesizlik Kütlesi (m<sub>u</sub>): <span id="lbl-mass">20 g</span></label>
+                <label><span>Dengesizlik Kütlesi (m<sub>u</sub>):</span> <span id="lbl-mass">20 g</span></label>
                 <input type="range" id="in-mass" min="0" max="100" step="1" value="20">
             </div>
             <div class="control-item">
-                <label>Eksenden Uzaklık (e): <span id="lbl-rad">2.5 cm</span></label>
+                <label><span>Eksenden Uzaklık (e):</span> <span id="lbl-rad">2.5 cm</span></label>
                 <input type="range" id="in-rad" min="0" max="10" step="0.1" value="2.5">
             </div>
             <div class="control-item">
-                <label style="color: #5dade2;">Görsel Titreşim Çarpanı: <span id="lbl-scale">20x</span></label>
+                <label><span style="color: #5dade2;">Görsel Titreşim Çarpanı:</span> <span id="lbl-scale">20x</span></label>
                 <input type="range" id="in-scale" min="1" max="100" step="1" value="20">
             </div>
             <div class="control-item">
-                <label>Zaman Çarpanı: <span id="lbl-time">1x</span></label>
+                <label><span>Zaman Çarpanı:</span> <span id="lbl-time">1x</span></label>
                 <input type="range" id="in-time" min="0.1" max="5" step="0.1" value="1">
             </div>
         </div>
@@ -196,8 +197,8 @@
 
     // MPU-6050 (Yatak üzerinde vidalı PCB tasarımı)
     const mpuGroup = new THREE.Group();
-    const mpuPcb = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.6), new THREE.MeshPhongMaterial({color: 0x2980b9})); // PCB
-    const mpuChip = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.25), new THREE.MeshPhongMaterial({color: 0x111111})); // Çip
+    const mpuPcb = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.6), new THREE.MeshPhongMaterial({color: 0x2980b9})); 
+    const mpuChip = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.25), new THREE.MeshPhongMaterial({color: 0x111111})); 
     mpuChip.position.y = 0.04;
     mpuGroup.add(mpuPcb); mpuGroup.add(mpuChip);
     
@@ -211,12 +212,12 @@
         mpuGroup.add(screw);
     });
 
-    mpuGroup.position.set(1, bearingHeight + 0.025, 0); // Yatağa sıfıra yakın oturtuldu
+    mpuGroup.position.set(1, bearingHeight + 0.025, 0); 
     scene.add(mpuGroup);
 
     // STM32 Kontrol Platformu (Yerdeki gri kutu ve kart)
     const platformGroup = new THREE.Group();
-    const controlBox = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 4), new THREE.MeshPhongMaterial({color: 0xaabbcc})); // Elektronik Kutu
+    const controlBox = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 4), new THREE.MeshPhongMaterial({color: 0xaabbcc})); 
     controlBox.position.y = 0.75;
     const stmPcb = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 3), new THREE.MeshPhongMaterial({color: 0x27ae60}));
     stmPcb.position.y = 1.525;
@@ -226,25 +227,25 @@
     stmPins.position.set(-0.8, 1.6, 0);
     
     platformGroup.add(controlBox); platformGroup.add(stmPcb); platformGroup.add(stmMainChip); platformGroup.add(stmPins);
-    platformGroup.position.set(3, 0, 5); // Zeminde
+    platformGroup.position.set(3, 0, 5); 
     scene.add(platformGroup);
 
     // Kablo 1: MPU-6050 -> STM32 (Gerçekçi, yere inen hat)
     const curve1 = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(1, bearingHeight, 0.3), // MPU çıkışı
-        new THREE.Vector3(1, 0.1, 1.5),           // Yatağın dibinden yere iniş
-        new THREE.Vector3(2.5, 0.1, 4),           // Yerde kıvrılma
-        new THREE.Vector3(2.8, 1.55, 4.5)         // Kutuya/STM'ye çıkış
+        new THREE.Vector3(1, bearingHeight, 0.3), 
+        new THREE.Vector3(1, 0.1, 1.5),           
+        new THREE.Vector3(2.5, 0.1, 4),           
+        new THREE.Vector3(2.8, 1.55, 4.5)         
     );
     const wire1 = new THREE.Mesh(new THREE.TubeGeometry(curve1, 40, 0.025, 8, false), new THREE.MeshPhongMaterial({color: 0x2980b9}));
     scene.add(wire1);
 
     // Kablo 2: STM32 -> PC (Yere inip kenara giden hat)
     const curve2 = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(3.2, 1.55, 5),          // STM çıkışı
-        new THREE.Vector3(4, 0.1, 6),             // Yere iniş
-        new THREE.Vector3(8, 0.1, 6),             // Yerde düz ilerleme
-        new THREE.Vector3(12, 0.1, 6)             // Ekrandan çıkış
+        new THREE.Vector3(3.2, 1.55, 5),          
+        new THREE.Vector3(4, 0.1, 6),             
+        new THREE.Vector3(8, 0.1, 6),             
+        new THREE.Vector3(12, 0.1, 6)             
     );
     const wire2 = new THREE.Mesh(new THREE.TubeGeometry(curve2, 40, 0.03, 8, false), new THREE.MeshPhongMaterial({color: 0x7f8c8d}));
     scene.add(wire2);
@@ -322,12 +323,11 @@
     }
 
     function updateHTML_Labels() {
-        // Etiketlerin 3D konumları
         const points = [
             { id: 'lbl-mpu-3d', vec: new THREE.Vector3(1, bearingHeight + 0.4, 0) },
             { id: 'lbl-stm-3d', vec: new THREE.Vector3(3, 2.2, 5) },
-            { id: 'lbl-i2c-3d', vec: new THREE.Vector3(2.5, 0.4, 4) }, // Yerdeki kablo ortası
-            { id: 'lbl-out-3d', vec: new THREE.Vector3(8, 0.4, 6) }    // Yerdeki diğer kablo ortası
+            { id: 'lbl-i2c-3d', vec: new THREE.Vector3(2.5, 0.4, 4) }, 
+            { id: 'lbl-out-3d', vec: new THREE.Vector3(8, 0.4, 6) }    
         ];
 
         points.forEach(p => {
